@@ -6,8 +6,8 @@
 #include <WiFiS3.h>
 
 // --- Wi-Fi credentials ---
-const char WIFI_SSID[] = "MEO-78B441-5G";
-const char WIFI_PASSWORD[] = "1a1668c06e";
+const char WIFI_SSID[] = "";
+const char WIFI_PASSWORD[] = "";
 
 WiFiServer server(80);
 bool serverRunning = false;
