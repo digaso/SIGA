@@ -1,569 +1,773 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Step Counter Dashboard</title>
-    <style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Step Counter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f3f5f9;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+      --line: #e8ebf1;
+      --input: #f6f7fb;
+      --accent: #4f46e5;
+      --accent-soft: #eef0ff;
+      --success: #10b981;
+      --success-soft: #e7f8f1;
+      --distance: #0ea5e9;
+      --distance-soft: #e6f6fd;
+      --calories: #f97316;
+      --calories-soft: #fff1e7;
+      --danger: #ef4444;
+      --shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 8px 24px rgba(17, 24, 39, 0.05);
+    }
+
+    @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #f4f5f7;
-        --card: #ffffff;
-        --text: #1d2330;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --accent: #2f6fed;
-        --success: #16a34a;
-        --success-soft: #dcfce7;
-        --danger: #dc2626;
+        --bg: #0d1117;
+        --card: #161b24;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --faint: #6b7280;
+        --line: #252c38;
+        --input: #1d2330;
+        --accent: #818cf8;
+        --accent-soft: #23264a;
+        --success: #34d399;
+        --success-soft: #12302a;
+        --distance: #38bdf8;
+        --distance-soft: #0f2a38;
+        --calories: #fb923c;
+        --calories-soft: #33200f;
+        --shadow: none;
       }
+    }
 
-      * {
-        box-sizing: border-box;
-      }
+    * { box-sizing: border-box; }
 
-      body {
-        margin: 0;
-        font-family:
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
 
-      .page {
-        max-width: 960px;
-        margin: 0 auto;
-        padding: 24px 16px 48px;
-      }
+    .page { max-width: 1080px; margin: 0 auto; padding: 32px 16px 56px; }
 
-      header {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 24px;
-      }
+    /* ---------- Header ---------- */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
 
-      h1 {
-        font-size: 22px;
-        margin: 0;
-      }
-      .subtitle {
-        color: var(--muted);
-        font-size: 14px;
-        margin-top: 4px;
-      }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: grid;
+      place-items: center;
+      color: #fff;
+    }
+    h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
-      .connection {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-      }
-      .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        color: var(--muted);
-        margin-right: 4px;
-      }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--danger);
-      }
-      .dot.online {
-        background: var(--success);
-      }
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      padding: 6px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fdecec;
+      color: var(--danger);
+      white-space: nowrap;
+    }
+    .pill.online { background: var(--success-soft); color: var(--success); }
+    .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
-      input {
-        font: inherit;
-        padding: 8px 10px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-        width: 170px;
-      }
+    input {
+      font: inherit;
+      font-size: 14px;
+      color: var(--text);
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--input);
+      width: 100%;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); background: var(--card); }
+    .connection input { width: 150px; background: transparent; border-color: transparent; }
 
-      button {
-        font: inherit;
-        padding: 8px 14px;
-        border: none;
-        border-radius: 8px;
-        background: var(--accent);
-        color: #fff;
-        cursor: pointer;
-      }
-      button:hover {
-        opacity: 0.9;
-      }
+    button {
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { filter: brightness(1.08); }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-      }
-      .wide {
-        grid-column: 1 / -1;
-      }
+    /* ---------- Layout ---------- */
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .wide { grid-column: 1 / -1; }
 
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 20px;
-      }
-      .card h2 {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin: 0 0 16px;
-      }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .card-subtitle { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
 
-      .today {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-      }
-      .ring {
-        position: relative;
-        width: 140px;
-        height: 140px;
-        flex-shrink: 0;
-      }
-      .ring svg {
-        transform: rotate(-90deg);
-      }
-      .ring-track {
-        stroke: var(--line);
-      }
-      .ring-fill {
-        stroke: var(--accent);
-        transition: stroke-dashoffset 0.5s;
-      }
-      .ring-fill.done {
-        stroke: var(--success);
-      }
-      .ring-label {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        font-weight: 700;
-      }
+    /* ---------- Today ---------- */
+    .today { display: flex; align-items: center; gap: 32px; }
 
-      .big {
-        font-size: 40px;
-        font-weight: 700;
-        line-height: 1;
-      }
-      .muted {
-        color: var(--muted);
-        font-size: 14px;
-      }
+    .ring { position: relative; width: 200px; height: 200px; flex-shrink: 0; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring-track { stroke: var(--accent-soft); }
+    .ring-fill { stroke: var(--accent); transition: stroke-dashoffset 0.6s ease; }
+    .ring-fill.done { stroke: var(--success); }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .ring-steps { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    .ring-label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .ring-percent {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .ring-percent.done { background: var(--success-soft); color: var(--success); }
 
-      .goal-form {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      .message {
-        font-size: 14px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        background: var(--bg);
-      }
-      .message.done {
-        background: var(--success-soft);
-        color: #166534;
-      }
+    .metrics { flex: 1; display: grid; gap: 12px; min-width: 0; }
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--input);
+    }
+    .metric-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .metric-icon.distance { background: var(--distance-soft); color: var(--distance); }
+    .metric-icon.calories { background: var(--calories-soft); color: var(--calories); }
+    .metric-icon.goal { background: var(--accent-soft); color: var(--accent); }
+    .metric-value { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+    .metric-value small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+    .metric-label { font-size: 12px; color: var(--muted); }
+    .metric-avg { font-size: 12px; color: var(--faint); margin-top: 4px; }
+    .metric-avg span { font-weight: 600; color: var(--muted); }
 
-      .stats {
-        display: flex;
-        gap: 32px;
-        flex-wrap: wrap;
-        margin-bottom: 24px;
-      }
-      .stat-value {
-        font-size: 24px;
-        font-weight: 700;
-      }
+    .banner {
+      margin-top: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .banner.done { background: var(--success-soft); color: var(--success); }
 
-      .chart {
-        position: relative;
-        display: flex;
-        align-items: flex-end;
-        gap: 12px;
-        height: 200px;
-        border-bottom: 1px solid var(--line);
-      }
-      .bar-col {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        height: 100%;
-      }
-      .bar {
-        width: 100%;
-        max-width: 48px;
-        min-height: 2px;
-        background: var(--accent);
-        border-radius: 6px 6px 0 0;
-        transition: height 0.5s;
-      }
-      .bar.met {
-        background: var(--success);
-      }
-      .bar-value {
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 4px;
-      }
+    /* ---------- Settings ---------- */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .input-unit { position: relative; }
+    .input-unit span {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: var(--faint);
+      pointer-events: none;
+    }
+    .input-unit input { padding-right: 52px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-      .goal-line {
-        position: absolute;
-        left: 0;
-        right: 0;
-        border-top: 2px dashed var(--success);
-        pointer-events: none;
-      }
-      .goal-line span {
-        position: absolute;
-        right: 0;
-        top: -20px;
-        font-size: 11px;
-        color: var(--success);
-        background: var(--card);
-        padding: 0 4px;
-      }
+    /* Stepper: − value + */
+    input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-      .labels {
-        display: flex;
-        gap: 12px;
-        margin-top: 8px;
-      }
-      .labels span {
-        flex: 1;
-        text-align: center;
-        font-size: 12px;
-        color: var(--muted);
-      }
-      .labels span.current {
-        color: var(--text);
-        font-weight: 600;
-      }
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--input);
+    }
+    .stepper:focus-within { border-color: var(--accent); background: var(--card); }
 
-      @media (max-width: 640px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
-        .today {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-        .chart,
-        .labels {
-          gap: 6px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <header>
+    .stepper-value {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    .stepper-value input {
+      width: 100%;
+      max-width: 72px;
+      padding: 6px 0;
+      border: none;
+      background: transparent;
+      text-align: right;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .stepper-value span { font-size: 13px; color: var(--faint); flex-shrink: 0; }
+
+    .step-btn {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      flex-shrink: 0;
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1;
+      box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+      border: 1px solid var(--line);
+    }
+    .step-btn:hover { background: var(--accent-soft); color: var(--accent); filter: none; }
+    .step-btn:active { transform: scale(0.94); }
+    #saveBtn { width: 100%; margin-top: 4px; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.5; }
+    .saved { color: var(--success); font-weight: 600; }
+
+    /* ---------- Week ---------- */
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--success-soft);
+      color: var(--success);
+      white-space: nowrap;
+    }
+
+    .week-totals {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 10px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .week-totals strong { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .week-totals .sep { color: var(--faint); }
+    .week-totals-label { font-size: 13px; }
+
+    .chart {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      height: 220px;
+      padding-top: 24px;
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+    }
+    .bar {
+      width: 100%;
+      max-width: 52px;
+      min-height: 4px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      transition: height 0.6s ease;
+    }
+    .bar.recorded { background: var(--accent); opacity: 0.55; }
+    .bar.today { opacity: 1; }
+    .bar.met { background: var(--success); }
+    .bar-value { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+
+    .goal-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 2px dashed var(--success);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .legend { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+    .legend::before { content: ""; width: 16px; border-top: 2px dashed var(--success); }
+
+    .labels { display: flex; gap: 14px; margin-top: 10px; }
+    .labels span { flex: 1; text-align: center; font-size: 12px; color: var(--muted); }
+    .labels span.current { color: var(--text); font-weight: 700; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .today { flex-direction: column; align-items: stretch; }
+      .ring { align-self: center; }
+      .connection { width: 100%; }
+      .connection input { flex: 1; width: auto; min-width: 0; }
+      .chart, .labels { gap: 6px; }
+      .week-totals strong { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/>
+            <path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/>
+          </svg>
+        </div>
         <div>
           <h1>Step Counter</h1>
           <div class="subtitle">Live data from the Arduino pedometer</div>
         </div>
-        <div class="connection">
-          <span class="status"
-            ><span id="dot" class="dot"></span
-            ><span id="statusText">Offline</span></span
-          >
-          <input id="ipInput" placeholder="Arduino IP address" />
-          <button id="connectBtn">Connect</button>
-        </div>
-      </header>
+      </div>
+      <div class="connection">
+        <span id="pill" class="pill"><span class="dot"></span><span id="statusText">Offline</span></span>
+        <input id="ipInput" placeholder="Arduino IP address">
+        <button id="connectBtn">Connect</button>
+      </div>
+    </header>
 
-      <div class="grid">
-        <section class="card">
-          <h2>Today</h2>
-          <div class="today">
-            <div class="ring">
-              <svg width="140" height="140">
-                <circle
-                  class="ring-track"
-                  cx="70"
-                  cy="70"
-                  r="60"
-                  fill="none"
-                  stroke-width="12"
-                />
-                <circle
-                  id="ringFill"
-                  class="ring-fill"
-                  cx="70"
-                  cy="70"
-                  r="60"
-                  fill="none"
-                  stroke-width="12"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <div id="percent" class="ring-label">0%</div>
+    <div class="grid">
+      <!-- Today -->
+      <section class="card">
+        <h2 class="card-title">Today</h2>
+        <p id="deviceState" class="card-subtitle">Device not connected</p>
+
+        <div class="today">
+          <div class="ring">
+            <svg width="200" height="200">
+              <circle class="ring-track" cx="100" cy="100" r="86" fill="none" stroke-width="16" />
+              <circle id="ringFill" class="ring-fill" cx="100" cy="100" r="86" fill="none" stroke-width="16" stroke-linecap="round" />
+            </svg>
+            <div class="ring-center">
+              <div id="todaySteps" class="ring-steps">0</div>
+              <div id="goalText" class="ring-label">of 0 steps</div>
+              <div id="percent" class="ring-percent">0%</div>
             </div>
-            <div>
-              <div id="todaySteps" class="big">0</div>
-              <div id="goalText" class="muted">of 0 steps</div>
-              <div id="deviceState" class="muted" style="margin-top: 8px">
-                Device: not connected
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-icon distance">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <div class="metric-value"><span id="todayDistance">0.00</span><small>km</small></div>
+                <div class="metric-label">Distance</div>
+                <div class="metric-avg">avg <span id="avgDistance">0.00</span> km / day</div>
+              </div>
+            </div>
+            <div class="metric">
+              <div class="metric-icon calories">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>
+              </div>
+              <div>
+                <div class="metric-value"><span id="todayCalories">0</span><small>kcal</small></div>
+                <div class="metric-label">Calories burned</div>
+                <div class="metric-avg">avg <span id="avgCalories">0</span> kcal / day</div>
+              </div>
+            </div>
+            <div class="metric">
+              <div class="metric-icon goal">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              </div>
+              <div>
+                <div class="metric-value"><span id="stepsLeft">0</span><small>steps</small></div>
+                <div class="metric-label">Left to reach the goal</div>
+                <div class="metric-avg">avg <span id="avgSteps">0</span> steps / day</div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="card">
-          <h2>Daily goal</h2>
-          <div class="goal-form">
-            <input id="goalInput" type="number" min="1" step="100" />
-            <button id="goalBtn">Save goal</button>
-          </div>
-          <div id="goalMessage" class="message"></div>
-        </section>
+        <div id="goalMessage" class="banner"></div>
+      </section>
 
-        <section class="card wide">
-          <h2>Last 7 days</h2>
-          <div class="stats">
-            <div>
-              <div id="average" class="stat-value">0</div>
-              <div id="averageNote" class="muted">Daily average</div>
-            </div>
-            <div>
-              <div id="total" class="stat-value">0</div>
-              <div class="muted">Total steps</div>
-            </div>
-            <div>
-              <div id="daysMet" class="stat-value">0</div>
-              <div class="muted">Days goal reached</div>
+      <!-- Settings -->
+      <section class="card settings">
+        <h2 class="card-title">Goal and profile</h2>
+        <p class="card-subtitle">Used for the goal, distance and calories</p>
+
+        <div class="field">
+          <label for="goalInput">Daily goal</label>
+          <div class="stepper">
+            <button type="button" class="step-btn" data-target="goalInput" data-step="-500" aria-label="Decrease goal">−</button>
+            <div class="stepper-value"><input id="goalInput" type="number" min="100" max="100000"><span>steps</span></div>
+            <button type="button" class="step-btn" data-target="goalInput" data-step="500" aria-label="Increase goal">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="heightInput">Height</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-target="heightInput" data-step="-1" aria-label="Decrease height">−</button>
+              <div class="stepper-value"><input id="heightInput" type="number" min="50" max="250"><span>cm</span></div>
+              <button type="button" class="step-btn" data-target="heightInput" data-step="1" aria-label="Increase height">+</button>
             </div>
           </div>
-          <div id="chart" class="chart"></div>
-          <div id="labels" class="labels"></div>
-        </section>
-      </div>
+          <div class="field">
+            <label for="weightInput">Weight</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-target="weightInput" data-step="-1" aria-label="Decrease weight">−</button>
+              <div class="stepper-value"><input id="weightInput" type="number" min="20" max="300"><span>kg</span></div>
+              <button type="button" class="step-btn" data-target="weightInput" data-step="1" aria-label="Increase weight">+</button>
+            </div>
+          </div>
+        </div>
+        <button id="saveBtn">Save</button>
+
+        <p id="profileHint" class="hint"></p>
+      </section>
+
+      <!-- Week -->
+      <section class="card wide">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Last 7 days</h2>
+            <p id="weekNote" class="card-subtitle">No days recorded yet</p>
+          </div>
+          <div id="daysMet" class="badge">0 of 0 days at goal</div>
+        </div>
+
+        <div class="week-totals">
+          <span><strong id="totalSteps">0</strong> steps</span>
+          <span class="sep">·</span>
+          <span><strong id="totalDistance">0.0</strong> km</span>
+          <span class="sep">·</span>
+          <span><strong id="totalCalories">0</strong> kcal</span>
+          <span class="week-totals-label">this week</span>
+        </div>
+
+        <div id="chart" class="chart"></div>
+        <div id="labels" class="labels"></div>
+      </section>
     </div>
+  </div>
 
-    <script>
-      const POLL_INTERVAL = 2000; // ms between requests to the Arduino
-      const RING_LENGTH = 2 * Math.PI * 60;
+  <script>
+    const POLL_INTERVAL = 2000;               // ms between requests to the Arduino
+    const RING_LENGTH = 2 * Math.PI * 86;
 
-      // Saved in the browser: Arduino IP, goal, and steps per day ("YYYY-MM-DD": steps)
-      let state = loadState();
-      let device = null; // last response from the Arduino
+    // Step length is about 41.4% of height (average of the common 0.413 female / 0.415 male factors).
+    const STEP_LENGTH_FACTOR = 0.414;
 
-      function loadState() {
-        const saved = JSON.parse(localStorage.getItem("stepDashboard") || "{}");
-        return {
-          ip: saved.ip || "",
-          goal: saved.goal || 5000,
-          history: saved.history || {},
-          lastDate: saved.lastDate || null,
-        };
+    // Walking at ~5 km/h is about 3.5 MET. 3.5 MET x 1 kg x 0.2 h (time to walk 1 km) = 0.7 kcal per kg per km.
+    const KCAL_PER_KG_PER_KM = 0.7;
+
+    // Saved in the browser: Arduino IP, goal, profile, and steps per day ("YYYY-MM-DD": steps)
+    let state = loadState();
+    let device = null;  // last response from the Arduino
+
+    function loadState() {
+      const saved = JSON.parse(localStorage.getItem("stepDashboard") || "{}");
+      return {
+        ip: saved.ip || "",
+        goal: saved.goal || 5000,
+        height: saved.height || 170,
+        weight: saved.weight || 70,
+        history: saved.history || {},
+        lastDate: saved.lastDate || null
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem("stepDashboard", JSON.stringify(state));
+    }
+
+    function dateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    // --- Calculations ---
+
+    function stepLengthMeters() {
+      return (state.height * STEP_LENGTH_FACTOR) / 100;
+    }
+
+    function distanceKm(steps) {
+      return (steps * stepLengthMeters()) / 1000;
+    }
+
+    function calories(steps) {
+      return distanceKm(steps) * state.weight * KCAL_PER_KG_PER_KM;
+    }
+
+    function format(number, decimals = 0) {
+      return number.toLocaleString("en-GB", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    // --- Arduino communication ---
+
+    async function arduino(path) {
+      const response = await fetch(`http://${state.ip}${path}`, { signal: AbortSignal.timeout(3000) });
+      return response.json();
+    }
+
+    // Fetches the current count and stores it as today's steps.
+    // On a new day, the Arduino counter is reset so each day starts at 0.
+    async function poll() {
+      if (!state.ip) {
+        return;
       }
-
-      function saveState() {
-        localStorage.setItem("stepDashboard", JSON.stringify(state));
-      }
-
-      function dateKey(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      }
-
-      async function arduino(path) {
-        const response = await fetch(`http://${state.ip}${path}`, {
-          signal: AbortSignal.timeout(3000),
-        });
-        return response.json();
-      }
-
-      // Fetches the current count and stores it as today's steps.
-      // On a new day, the Arduino counter is reset so each day starts at 0.
-      async function poll() {
-        if (!state.ip) {
-          return;
-        }
-        try {
-          const today = dateKey(new Date());
-          if (state.lastDate && state.lastDate !== today) {
-            await arduino("/reset");
-          }
-          device = await arduino("/");
-          state.lastDate = today;
-          state.history[today] = device.steps;
-          saveState();
-          setOnline(true);
-        } catch (error) {
-          setOnline(false);
-        }
-        render();
-      }
-
-      async function sendGoal() {
-        if (!state.ip) {
-          return;
-        }
-        try {
-          device = await arduino(`/goal?value=${state.goal}`);
-          setOnline(true);
-        } catch (error) {
-          setOnline(false);
-        }
-      }
-
-      async function pollLoop() {
-        await poll();
-        setTimeout(pollLoop, POLL_INTERVAL);
-      }
-
-      function setOnline(online) {
-        document.getElementById("dot").classList.toggle("online", online);
-        document.getElementById("statusText").textContent = online
-          ? "Connected"
-          : "Offline";
-        if (!online) {
-          device = null;
-        }
-      }
-
-      function render() {
+      try {
         const today = dateKey(new Date());
-        const steps = state.history[today] || 0;
-        const goal = state.goal;
-        const reached = steps >= goal;
-        const progress = Math.min(steps / goal, 1);
-
-        document.getElementById("todaySteps").textContent =
-          steps.toLocaleString();
-        document.getElementById("goalText").textContent =
-          `of ${goal.toLocaleString()} steps`;
-        document.getElementById("percent").textContent =
-          `${Math.round((steps / goal) * 100)}%`;
-
-        const ring = document.getElementById("ringFill");
-        ring.style.strokeDasharray = RING_LENGTH;
-        ring.style.strokeDashoffset = RING_LENGTH * (1 - progress);
-        ring.classList.toggle("done", reached);
-
-        let deviceText = "Device: not connected";
-        if (device) {
-          deviceText =
-            device.status === "paused" ? "Device: paused" : "Device: counting";
+        if (state.lastDate && state.lastDate !== today) {
+          await arduino("/reset");
         }
-        document.getElementById("deviceState").textContent = deviceText;
-
-        const message = document.getElementById("goalMessage");
-        message.classList.toggle("done", reached);
-        message.textContent = reached
-          ? "Goal reached! The Arduino is showing a heart."
-          : `${(goal - steps).toLocaleString()} steps to go today.`;
-
-        renderWeek(today);
-      }
-
-      function renderWeek(today) {
-        const days = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          const key = dateKey(date);
-          days.push({
-            key: key,
-            label: date.toLocaleDateString("en-GB", { weekday: "short" }),
-            steps: state.history[key],
-          });
-        }
-
-        // Only days with recorded data count toward the average
-        const recorded = days.filter((day) => day.steps !== undefined);
-        const total = recorded.reduce((sum, day) => sum + day.steps, 0);
-        const average = recorded.length
-          ? Math.round(total / recorded.length)
-          : 0;
-        const daysMet = recorded.filter(
-          (day) => day.steps >= state.goal,
-        ).length;
-
-        document.getElementById("average").textContent =
-          average.toLocaleString();
-        document.getElementById("averageNote").textContent =
-          `Daily average (${recorded.length} of 7 days recorded)`;
-        document.getElementById("total").textContent = total.toLocaleString();
-        document.getElementById("daysMet").textContent =
-          `${daysMet} / ${recorded.length}`;
-
-        const scale =
-          Math.max(state.goal, ...days.map((day) => day.steps || 0)) * 1.1;
-
-        const bars = days.map((day) => {
-          const steps = day.steps || 0;
-          const height = (steps / scale) * 100;
-          const met = steps >= state.goal ? " met" : "";
-          return `<div class="bar-col">
-                  <div class="bar-value">${steps.toLocaleString()}</div>
-                  <div class="bar${met}" style="height: ${height}%"></div>
-                </div>`;
-        });
-        const goalLine = `<div class="goal-line" style="bottom: ${(state.goal / scale) * 100}%"><span>Goal</span></div>`;
-        document.getElementById("chart").innerHTML = bars.join("") + goalLine;
-
-        document.getElementById("labels").innerHTML = days
-          .map(
-            (day) =>
-              `<span class="${day.key === today ? "current" : ""}">${day.label}</span>`,
-          )
-          .join("");
-      }
-
-      document
-        .getElementById("connectBtn")
-        .addEventListener("click", async () => {
-          state.ip = document.getElementById("ipInput").value.trim();
-          saveState();
-          await sendGoal();
-          await poll();
-        });
-
-      document.getElementById("goalBtn").addEventListener("click", async () => {
-        const value = parseInt(document.getElementById("goalInput").value, 10);
-        if (!(value > 0)) {
-          return;
-        }
-        state.goal = value;
+        device = await arduino("/");
+        state.lastDate = today;
+        state.history[today] = device.steps;
         saveState();
-        await sendGoal();
-        render();
-      });
-
-      // Start
-      document.getElementById("ipInput").value = state.ip;
-      document.getElementById("goalInput").value = state.goal;
+        setOnline(true);
+      } catch (error) {
+        setOnline(false);
+      }
       render();
-      sendGoal().then(pollLoop);
-    </script>
-  </body>
+    }
+
+    async function sendGoal() {
+      if (!state.ip) {
+        return;
+      }
+      try {
+        device = await arduino(`/goal?value=${state.goal}`);
+        setOnline(true);
+      } catch (error) {
+        setOnline(false);
+      }
+    }
+
+    async function pollLoop() {
+      await poll();
+      setTimeout(pollLoop, POLL_INTERVAL);
+    }
+
+    function setOnline(online) {
+      document.getElementById("pill").classList.toggle("online", online);
+      document.getElementById("statusText").textContent = online ? "Connected" : "Offline";
+      if (!online) {
+        device = null;
+      }
+    }
+
+    // --- Rendering ---
+
+    function render() {
+      const today = dateKey(new Date());
+      const steps = state.history[today] || 0;
+      const goal = state.goal;
+      const reached = steps >= goal;
+      const progress = Math.min(steps / goal, 1);
+
+      document.getElementById("todaySteps").textContent = format(steps);
+      document.getElementById("goalText").textContent = `of ${format(goal)} steps`;
+
+      const percent = document.getElementById("percent");
+      percent.textContent = `${Math.round((steps / goal) * 100)}%`;
+      percent.classList.toggle("done", reached);
+
+      const ring = document.getElementById("ringFill");
+      ring.style.strokeDasharray = RING_LENGTH;
+      ring.style.strokeDashoffset = RING_LENGTH * (1 - progress);
+      ring.classList.toggle("done", reached);
+
+      document.getElementById("todayDistance").textContent = format(distanceKm(steps), 2);
+      document.getElementById("todayCalories").textContent = format(calories(steps));
+      document.getElementById("stepsLeft").textContent = format(Math.max(goal - steps, 0));
+
+      let deviceText = "Device not connected";
+      if (device) {
+        deviceText = device.status === "paused" ? "Device paused" : "Device counting";
+      }
+      document.getElementById("deviceState").textContent = deviceText;
+
+      const message = document.getElementById("goalMessage");
+      message.classList.toggle("done", reached);
+      message.textContent = reached
+        ? "Goal reached! The Arduino showed a heart."
+        : `${format(goal - steps)} steps to go. Keep moving!`;
+
+      document.getElementById("profileHint").textContent =
+        `Step length: ${format(stepLengthMeters() * 100)} cm (41.4% of height). ` +
+        `Calories: ${KCAL_PER_KG_PER_KM} kcal per kg per km of walking.`;
+
+      renderWeek(today);
+    }
+
+    function renderWeek(today) {
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const key = dateKey(date);
+        days.push({
+          key: key,
+          label: date.toLocaleDateString("en-GB", { weekday: "short" }),
+          steps: state.history[key]
+        });
+      }
+
+      // Only days with recorded data count toward the average
+      const recorded = days.filter(day => day.steps !== undefined);
+      const total = recorded.reduce((sum, day) => sum + day.steps, 0);
+      const average = recorded.length ? Math.round(total / recorded.length) : 0;
+      const daysMet = recorded.filter(day => day.steps >= state.goal).length;
+
+      const recordedText = recorded.length ? `${recorded.length} of 7 days recorded` : "No days recorded yet";
+      document.getElementById("weekNote").innerHTML =
+        `${recordedText}<span class="legend">Goal ${format(state.goal)} steps</span>`;
+      document.getElementById("avgSteps").textContent = format(average);
+      document.getElementById("avgDistance").textContent = format(distanceKm(average), 2);
+      document.getElementById("avgCalories").textContent = format(calories(average));
+      document.getElementById("totalSteps").textContent = format(total);
+      document.getElementById("totalDistance").textContent = format(distanceKm(total), 1);
+      document.getElementById("totalCalories").textContent = format(calories(total));
+      document.getElementById("daysMet").textContent = `${daysMet} of ${recorded.length} days at goal`;
+
+      const scale = Math.max(state.goal, ...days.map(day => day.steps || 0)) * 1.1;
+
+      const bars = days.map(day => {
+        const steps = day.steps || 0;
+        const height = (steps / scale) * 100;
+
+        let classes = "bar";
+        if (day.steps !== undefined) classes += " recorded";
+        if (day.key === today) classes += " today";
+        if (steps >= state.goal) classes += " met";
+
+        const value = day.steps !== undefined ? format(steps) : "–";
+        const tooltip = `${format(steps)} steps · ${format(distanceKm(steps), 2)} km · ${format(calories(steps))} kcal`;
+
+        return `<div class="bar-col" title="${tooltip}">
+                  <div class="bar-value">${value}</div>
+                  <div class="${classes}" style="height: ${height}%"></div>
+                </div>`;
+      });
+      const goalLine = `<div class="goal-line" style="bottom: calc((100% - 24px) * ${state.goal / scale})"></div>`;
+      document.getElementById("chart").innerHTML = bars.join("") + goalLine;
+
+      document.getElementById("labels").innerHTML = days
+        .map(day => `<span class="${day.key === today ? "current" : ""}">${day.label}</span>`)
+        .join("");
+    }
+
+    // --- Events ---
+
+    // − / + buttons: change the linked input by data-step, kept within its min and max
+    document.querySelectorAll(".step-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.target);
+        let value = (parseFloat(input.value) || 0) + Number(button.dataset.step);
+        value = Math.min(Math.max(value, Number(input.min)), Number(input.max));
+        input.value = value;
+      });
+    });
+
+    document.getElementById("connectBtn").addEventListener("click", async () => {
+      state.ip = document.getElementById("ipInput").value.trim();
+      saveState();
+      await sendGoal();
+      await poll();
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const goal = parseInt(document.getElementById("goalInput").value, 10);
+      const height = parseFloat(document.getElementById("heightInput").value);
+      const weight = parseFloat(document.getElementById("weightInput").value);
+
+      if (goal > 0) state.goal = goal;
+      if (height >= 50 && height <= 250) state.height = height;
+      if (weight >= 20 && weight <= 300) state.weight = weight;
+
+      saveState();
+      await sendGoal();
+      render();
+
+      const hint = document.getElementById("profileHint");
+      hint.innerHTML = `<span class="saved">Saved.</span> ` + hint.textContent;
+    });
+
+    // --- Start ---
+    document.getElementById("ipInput").value = state.ip;
+    document.getElementById("goalInput").value = state.goal;
+    document.getElementById("heightInput").value = state.height;
+    document.getElementById("weightInput").value = state.weight;
+    render();
+    sendGoal().then(pollLoop);
+  </script>
+</body>
 </html>

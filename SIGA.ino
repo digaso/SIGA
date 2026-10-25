@@ -8,7 +8,6 @@
 // --- Wi-Fi credentials ---
 const char WIFI_SSID[] = "";
 const char WIFI_PASSWORD[] = "";
-
 WiFiServer server(80);
 bool serverRunning = false;
 
@@ -21,30 +20,33 @@ const int PIN_RESET_BUTTON = 4;
 
 // --- Timing constants ---
 const unsigned long SAMPLE_INTERVAL = 20;          // ms between sensor reads (~50 Hz)
-const unsigned long MIN_STEP_INTERVAL = 300;       // ms minimum between two steps
 const unsigned long BUTTON_DEBOUNCE = 200;         // ms
 const unsigned long WIFI_RETRY_INTERVAL = 10000;   // ms between reconnection attempts
-const unsigned long DISPLAY_SWITCH_INTERVAL = 2000; // ms between heart and step count after the goal
+const unsigned long HEART_DURATION = 3000;         // ms the heart is shown when the goal is reached
 
 // --- Step detection constants ---
-const float STEP_THRESHOLD = 1.2;    // m/s^2 above baseline to register a step
-const float REARM_THRESHOLD = 0.5;   // must drop below this before the next step
-const float SMOOTHING = 0.5;         // low-pass factor for the magnitude (0-1)
-const float BASELINE_RATE = 0.005;   // how fast the baseline follows the sensor
+const float STEP_DELTA = 1.5;                 // m/s^2 above the running average to count a step
+const float FILTER_ALPHA = 0.15;               // low-pass filter strength (lower = smoother)
+const float AVERAGE_ALPHA = 0.01;              // running average speed (~2 s to adapt)
+const unsigned long STEP_COOLDOWN = 300;       // ms to ignore new peaks after a step
+const bool PLOT_MODE = false;                  // true = print values for the Serial Plotter
 
 // --- Step state ---
 int stepCount = 0;
 int stepGoal = 5000;                 // daily goal, can be changed from the dashboard
-float filteredMagnitude = 9.81;
-float baseline = 9.81;
-bool stepArmed = true;
-unsigned long lastSampleTime = 0;
+float filtered = 9.81;               // smoothed magnitude
+float average = 9.81;                // running average of the smoothed magnitude
+bool stepArmed = true;               // true when the signal is back below the average
 unsigned long lastStepTime = 0;
+
+unsigned long lastSampleTime = 0;
 unsigned long lastWifiRetry = 0;
 
 // --- Display state ---
 int displayedSteps = -1;             // last number drawn on the LED matrix
 bool heartShown = false;
+bool heartActive = false;            // true while the goal heart is on screen
+unsigned long heartStart = 0;
 
 // Heart shown on the 8x12 LED matrix when the goal is reached
 uint8_t heart[8][12] = {
@@ -81,9 +83,10 @@ void setup() {
   }
 
   mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  mpu.setFilterBandwidth(MPU6050_BAND_10_HZ);   // walking is below 5 Hz; filter out faster vibration
 
   connectWifi();
+  Serial.println("Step counter started.");
 }
 
 void loop() {
@@ -124,48 +127,77 @@ void handleButtons(unsigned long now) {
 void resetSteps() {
   stepCount = 0;
   stepArmed = true;
+  heartActive = false;
 }
 
-// Reads the accelerometer, smooths it, and counts a step on each clear peak.
+// Adds steps and shows the heart when the count crosses the goal.
+void addSteps(int amount) {
+  int before = stepCount;
+  stepCount += amount;
+
+  if (!PLOT_MODE) {
+    Serial.print("Steps: ");
+    Serial.println(stepCount);
+  }
+
+  if (before < stepGoal && stepCount >= stepGoal) {
+    heartActive = true;
+    heartStart = millis();
+  }
+}
+
+// Step detection:
+// 1. Magnitude of the acceleration vector, so orientation does not matter.
+// 2. Low-pass filter (exponential moving average) to remove noise.
+// 3. Dynamic threshold: a step is a spike STEP_DELTA above the running average.
+// 4. Cooldown: one footstep makes several small peaks, so new peaks are
+//    ignored for STEP_COOLDOWN ms after a step.
 void updateSteps(unsigned long now) {
   sensors_event_t accel, gyro, temp;
   mpu.getEvent(&accel, &gyro, &temp);
 
+  // 1. Vector magnitude
   float magnitude = sqrt(accel.acceleration.x * accel.acceleration.x +
                          accel.acceleration.y * accel.acceleration.y +
                          accel.acceleration.z * accel.acceleration.z);
 
-  // Low-pass filter to remove short noise spikes
-  filteredMagnitude = SMOOTHING * magnitude + (1.0 - SMOOTHING) * filteredMagnitude;
+  // 2. Low-pass filter
+  filtered = FILTER_ALPHA * magnitude + (1.0 - FILTER_ALPHA) * filtered;
 
-  float force = filteredMagnitude - baseline;
+  // 3. Running average (follows gravity, drift and walking style slowly)
+  average = AVERAGE_ALPHA * filtered + (1.0 - AVERAGE_ALPHA) * average;
+  float threshold = average + STEP_DELTA;
 
-  // Only let the baseline follow the sensor while at rest,
-  // so steps do not pull the baseline upward.
-  if (force < REARM_THRESHOLD) {
-    baseline = (1.0 - BASELINE_RATE) * baseline + BASELINE_RATE * filteredMagnitude;
+  if (PLOT_MODE) {
+    Serial.print("filtered:");
+    Serial.print(filtered);
+    Serial.print(",average:");
+    Serial.print(average);
+    Serial.print(",threshold:");
+    Serial.println(threshold);
   }
 
-  // Hysteresis: a step needs a rise above STEP_THRESHOLD and a full drop below REARM_THRESHOLD
-  if (stepArmed && force > STEP_THRESHOLD) {
+  // Count on the rising edge above the threshold
+  if (stepArmed && filtered > threshold) {
     stepArmed = false;
-    if (now - lastStepTime > MIN_STEP_INTERVAL) {
-      stepCount++;
+
+    // 4. Cooldown
+    if (now - lastStepTime > STEP_COOLDOWN) {
       lastStepTime = now;
-      Serial.print("Steps: ");
-      Serial.println(stepCount);
+      addSteps(1);
     }
-  } else if (!stepArmed && force < REARM_THRESHOLD) {
-    stepArmed = true;
+  } else if (!stepArmed && filtered < average) {
+    stepArmed = true;   // back below the average, ready for the next step
   }
 }
 
-// Shows the step count, or alternates heart and step count once the goal is reached.
+// Shows the heart for HEART_DURATION after the goal is crossed, otherwise the step count.
 void updateDisplay(unsigned long now) {
-  bool goalReached = stepGoal > 0 && stepCount >= stepGoal;
-  bool heartTurn = (now / DISPLAY_SWITCH_INTERVAL) % 2 == 0;
+  if (heartActive && millis() - heartStart >= HEART_DURATION) {
+    heartActive = false;
+  }
 
-  if (goalReached && heartTurn) {
+  if (heartActive) {
     showHeart();
   } else {
     showNumber(stepCount);
@@ -228,7 +260,9 @@ bool connectWifi() {
 // Retries the connection periodically and starts the server once connected.
 void handleWifi(unsigned long now) {
   if (WiFi.status() == WL_CONNECTED) {
-    if (!serverRunning) {
+    // The board reports "connected" before the router assigns an IP,
+    // so wait until the address is no longer 0.0.0.0.
+    if (!serverRunning && WiFi.localIP()[0] != 0) {
       server.begin();
       serverRunning = true;
       Serial.print("Dashboard IP address: ");
