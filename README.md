@@ -42,6 +42,51 @@ Each button has one leg on a pin and the other leg on **GND**. No resistors need
 
 **Buttons:** D2 pauses/resumes counting, D4 resets the count to 0.
 
+### Step detection in detail
+
+Only the **accelerometer** of the MPU6050 is used (the gyroscope is ignored).
+It's set to a ±4 g range with the sensor's built-in 10 Hz low-pass filter, because walking happens below about 5 Hz.
+The sensor is read every 20 ms (50 Hz).
+
+**1. Acceleration magnitude.** The sensor gives acceleration on 3 axes (X, Y, Z) in m/s². They're combined into one value:
+
+```
+|a| = √(x² + y² + z²)
+```
+
+Standing still, this is about **9.81 m/s²** (gravity), whatever the angle of the board.
+Each step adds a short spike to it, which is why the count doesn't depend on how the device is worn.
+
+**2. Smoothing (low-pass filter).** An exponential moving average removes small jitters:
+
+```
+filtered = 0.15 · |a| + 0.85 · filtered
+```
+
+**3. Adaptive baseline.** A second, much slower average follows the "normal" level of the signal over about 2 seconds:
+
+```
+average   = 0.01 · filtered + 0.99 · average
+threshold = average + 1.5 m/s²
+```
+
+Because the threshold moves with the baseline, it adjusts to sensor drift and to different walking styles. There's no fixed value to calibrate.
+
+**4. Counting a step.** A step is counted when `filtered` rises above `threshold`.
+The detector then waits until `filtered` drops back below `average` before it can count again, so one spike counts once.
+
+**5. Cooldown.** One footstep can still make a few bumps. After a step, new peaks are ignored for **300 ms**, which caps detection at about 3 steps per second (faster than a normal run).
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `SAMPLE_INTERVAL` | 20 ms | Sampling rate (50 Hz) |
+| `FILTER_ALPHA` | 0.15 | Smoothing strength |
+| `AVERAGE_ALPHA` | 0.01 | Baseline speed (~2 s) |
+| `STEP_DELTA` | 1.5 m/s² | How far above the baseline a spike must go |
+| `STEP_COOLDOWN` | 300 ms | Minimum time between steps |
+
+To tune these values, set `PLOT_MODE = true` in `SIGA.ino` and open the Arduino **Serial Plotter**. It draws `filtered`, `average` and `threshold` live.
+
 ## Setup
 
 1. Install these libraries in the Arduino IDE: **Adafruit MPU6050** and **ArduinoGraphics**
